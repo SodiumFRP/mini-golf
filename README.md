@@ -19,7 +19,7 @@ $> npm install
 ```bash
 $> git clone https://github.com/huanhulan/continuous_time.git
 $> cd continuous_time
-$> yarn install
+$> yarn
 ```
 
 ## How to use
