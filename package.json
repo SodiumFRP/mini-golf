@@ -1,0 +1,53 @@
+{
+  "name": "continuous_time",
+  "version": "1.0.0",
+  "description": "continuous time example for frp",
+  "main": "index.js",
+  "scripts": {
+    "build": "webpack --config ./build/webpack.prod.js",
+    "start": "nodemon --watch build --exec \"webpack-dev-server --config ./build/webpack.dev.js\"",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "frp",
+    "sodiumjs",
+    "reactjs"
+  ],
+  "author": "lex.huang",
+  "license": "MIT",
+  "dependencies": {
+    "autoprefixer": "^7.2.4",
+    "awesome-typescript-loader": "^3.4.1",
+    "browserslist": "^2.11.0",
+    "file-loader": "^1.1.6",
+    "json-loader": "^0.5.7",
+    "lodash.throttle": "^4.1.1",
+    "modernizr": "^3.5.0",
+    "modernizr-loader": "^1.0.1",
+    "node-sass": "^4.7.2",
+    "node.normalize.scss": "^3.0.3",
+    "nodemon": "^1.14.7",
+    "source-map-loader": "^0.2.3",
+    "typescript": "^2.6.2",
+    "webpack": "3.5.4",
+    "webpack-dev-server": "2.5.1"
+  },
+  "devDependencies": {
+    "@types/modernizr": "^3.5.1",
+    "babel-eslint": "^8.2.1",
+    "clean-webpack-plugin": "^0.1.17",
+    "commitizen": "^2.9.6",
+    "sodiumjs": "^1.0.8",
+    "typings-for-css-modules-loader": "^1.7.0",
+    "webpack-merge": "^4.1.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/huanhulan/continuous_time.git"
+  },
+  "config": {
+    "commitizen": {
+      "path": "cz-conventional-changelog"
+    }
+  }
+}
