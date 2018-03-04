@@ -1,4 +1,4 @@
-# battle-of-paradigms
+# continuous_time
 
 A typescript implementation of continuous-time from [functional reactive programming](https://www.amazon.com/Functional-Reactive-Programming-Stephen-Blackheath/dp/1633430103)
 
