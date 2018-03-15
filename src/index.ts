@@ -60,7 +60,10 @@ window.onload = () => {
             animate();
         });
     };
+
     $btn.addEventListener("click", () => main());
+    $frequency.addEventListener("input", (e) =>
+        (document.querySelector("label[for='frequency']") as HTMLLabelElement).innerText = `FPS:${$frequency.value}`);
     main();
 };
 
