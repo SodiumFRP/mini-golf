@@ -37,6 +37,7 @@
     "babel-eslint": "^8.2.1",
     "clean-webpack-plugin": "^0.1.17",
     "commitizen": "^2.9.6",
+    "extract-text-webpack-plugin": "^3.0.2",
     "sodiumjs": "^1.0.8",
     "typings-for-css-modules-loader": "^1.7.0",
     "webpack-merge": "^4.1.1"
