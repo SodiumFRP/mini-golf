@@ -9,6 +9,25 @@ window.onload = () => {
     const $btn = document.getElementById("restart") as HTMLButtonElement;
     const $log = document.getElementById("log") as HTMLDivElement;
     const $frequency = document.getElementById("frequency") as HTMLInputElement;
+    let frequency;
+    let animationId;
+    let stopped = false;
+    let timeoutFunc:(func:any,time?:number) => any;
+    let cancelTimeoutFunc:(any) => any;
+
+    const updateFunc = ()=>{
+        frequency = +$frequency.value;
+        if(frequency===60) {
+            timeoutFunc = requestAnimationFrame;
+            cancelTimeoutFunc = cancelAnimationFrame;
+        }else{
+            timeoutFunc = (func,time)=>setTimeout(func,time);
+            cancelTimeoutFunc = clearTimeout;
+        }
+        (document.querySelector("label[for='frequency']") as HTMLLabelElement).innerText = `FPS:${frequency}`;
+        cancelTimeoutFunc(animationId);                             
+    };
+
     if (!modernizr.canvas) {
         $container.innerHTML = 'please use modern browsers like Chrome that' +
             ' supports canvas to get the best user experience.';
@@ -20,8 +39,7 @@ window.onload = () => {
     const ctx = $canvas.getContext("2d") as CanvasRenderingContext2D;
 
     const main = () => {
-        let animationId;
-        let stopped = false;
+        stopped = false;
         const startTime = new Date();
         const windowSize = {
             width: $canvas.width,
@@ -29,6 +47,7 @@ window.onload = () => {
         };
         const sys = new SecondsTimerSystem();
 
+        updateFunc();
         Transaction.run(() => {
             const {cBall, sPhase} = bounce(sys, windowSize);
 
@@ -44,7 +63,7 @@ window.onload = () => {
                     $log.appendChild($p);
                     $btn.disabled = false;
 
-                    clearTimeout(animationId);
+                    cancelTimeoutFunc(animationId);
                 } else {
                     $btn.disabled = true;
                 }
@@ -54,16 +73,15 @@ window.onload = () => {
                 if (stopped) return;
                 ctx.clearRect(0, 0, windowSize.width, windowSize.height);
                 cBall.sample().draw(ctx);
-                animationId = setTimeout(animate, (1000 / (+$frequency.value)));
+                timeoutFunc(animate, 1000/frequency);
             }
 
             animate();
         });
     };
 
+    $frequency.addEventListener("input", updateFunc);
     $btn.addEventListener("click", () => main());
-    $frequency.addEventListener("input", (e) =>
-        (document.querySelector("label[for='frequency']") as HTMLLabelElement).innerText = `FPS:${$frequency.value}`);
     main();
 };
 
