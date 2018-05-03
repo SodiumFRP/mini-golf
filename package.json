@@ -1,5 +1,5 @@
 {
-  "name": "continuous_time",
+  "name": "mini_golf",
   "version": "1.0.0",
   "description": "continuous time example for frp",
   "main": "index.js",
@@ -30,7 +30,8 @@
     "source-map-loader": "^0.2.3",
     "typescript": "^2.6.2",
     "webpack": "3.5.4",
-    "webpack-dev-server": "2.5.1"
+    "webpack-dev-server": "2.5.1",
+    "ts-option": "1.1.4"
   },
   "devDependencies": {
     "@types/modernizr": "^3.5.1",
@@ -44,7 +45,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/huanhulan/continuous_time.git"
+    "url": "git+https://github.com/SodiumFRP/mini-golf.git"
   },
   "config": {
     "commitizen": {

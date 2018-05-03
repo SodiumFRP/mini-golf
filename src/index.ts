@@ -1,7 +1,9 @@
-import bounce from "./bounce";
-import {SecondsTimerSystem, Operational, Transaction} from "sodiumjs";
+import golf from "./golf";
+import {SecondsTimerSystem, Operational, Transaction, Cell, StreamSink} from "sodiumjs";
 import * as modernizrConfig from "./../.modernizrrc.json";
-import {Phase} from "./typing";
+import throttle from 'lodash.throttle';
+import {Pos, Dimensions} from "./types";
+import getCoords from './getCoords';
 
 window.onload = () => {
     const modernizr = modernizrConfig;
@@ -11,7 +13,6 @@ window.onload = () => {
     const $frequency = document.getElementById("frequency") as HTMLInputElement;
     let frequency;
     let animationId;
-    let stopped = false;
     let timeoutFunc:(func:any,time?:number) => any;
     let cancelTimeoutFunc:(any) => any;
 
@@ -37,42 +38,35 @@ window.onload = () => {
         "border:1px solid;box-sizing: border-box;'></canvas>";
     const $canvas = document.getElementById("canvas") as HTMLCanvasElement;
     const ctx = $canvas.getContext("2d") as CanvasRenderingContext2D;
+    const windowSize = {
+        width: $canvas.width,
+        height: $canvas.height
+    };
+    const sMouseDown = new StreamSink<Pos>();
+    const sMouseMove = new StreamSink<Pos>();
+    const sMouseUp = new StreamSink<Pos>();
+    const throttledStream = stream => throttle((e) => stream.send(getCoords(e, $canvas)), 16);
+    const throttledMouseDown = throttledStream(sMouseDown);
+    const throttledMouseMove = throttledStream(sMouseMove);
+    const throttledMouseUp = throttledStream(sMouseUp);
 
     const main = () => {
-        stopped = false;
         const startTime = new Date();
-        const windowSize = {
-            width: $canvas.width,
-            height: $canvas.height
-        };
         const sys = new SecondsTimerSystem();
 
         updateFunc();
         Transaction.run(() => {
-            const {cBall, sPhase} = bounce(sys, windowSize);
 
-            Operational.updates(cBall).listen(b => b);
-            sPhase.listen(p => {
-                if (p === Phase.stopped) {
-                    stopped = true;
+            sMouseDown.listen((pos) => {});
+            sMouseMove.listen((pos) => {});
+            sMouseUp.listen((pos) => {});
 
-                    const stopTime = new Date();
-                    const logTpl = `from ${startTime} to ${stopTime}, total: ${((+stopTime) - (+startTime)) / 1000} seconds`;
-                    const $p = document.createElement("p");
-                    $p.innerText = logTpl;
-                    $log.appendChild($p);
-                    $btn.disabled = false;
-
-                    cancelTimeoutFunc(animationId);
-                } else {
-                    $btn.disabled = true;
-                }
-            });
+            let scene = (ctx : CanvasRenderingContext2D) => {};
+            golf(sys, windowSize, sMouseDown, sMouseMove, sMouseUp).listen((sc) => scene = sc);
 
             function animate() {
-                if (stopped) return;
                 ctx.clearRect(0, 0, windowSize.width, windowSize.height);
-                cBall.sample().draw(ctx);
+                scene(ctx);
                 timeoutFunc(animate, 1000/frequency);
             }
 
@@ -82,6 +76,19 @@ window.onload = () => {
 
     $frequency.addEventListener("input", updateFunc);
     $btn.addEventListener("click", () => main());
+    $canvas.addEventListener('mousedown', e => {
+        throttledMouseDown(e);
+        return false;
+    });
+    $canvas.addEventListener('mouseup', e => {
+        throttledMouseUp(e);
+        return false;
+    });
+    $canvas.addEventListener('mousemove', e => {
+        throttledMouseMove(e);
+        return false;
+    });
+
     main();
 };
 
