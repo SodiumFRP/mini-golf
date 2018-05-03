@@ -3,7 +3,7 @@ import {Pos} from './types';
 export default (evt: MouseEvent, canvas: HTMLCanvasElement) => {
     const rect = canvas.getBoundingClientRect();
     return {
-        x: evt.offsetX / rect.width * canvas.width,
-        y: evt.offsetY / rect.height * canvas.height
+        x: (evt.clientX - rect.left) / rect.width * canvas.width,
+        y: (evt.clientY - rect.top) / rect.height * canvas.height
     } as Pos;
 }

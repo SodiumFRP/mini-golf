@@ -18,7 +18,9 @@ const sassLoaderOptions = {
 module.exports = merge(common(cssLoaderOptions, sassLoaderOptions), {
     devServer: {
         compress: true,
-        port: 3004
+        port: 3004,
+        disableHostCheck: true,
+        host: "0.0.0.0"
     },
     output: {
         filename: "bundle.js",

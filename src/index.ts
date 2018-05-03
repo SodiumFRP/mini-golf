@@ -45,10 +45,10 @@ window.onload = () => {
     const sMouseDown = new StreamSink<Pos>();
     const sMouseMove = new StreamSink<Pos>();
     const sMouseUp = new StreamSink<Pos>();
-    const throttledStream = stream => throttle((e) => stream.send(getCoords(e, $canvas)), 16);
-    const throttledMouseDown = throttledStream(sMouseDown);
-    const throttledMouseMove = throttledStream(sMouseMove);
-    const throttledMouseUp = throttledStream(sMouseUp);
+    const throttledMouse = stream => throttle((e) => stream.send(getCoords(e, $canvas)), 16);
+    const throttledMouseDown = throttledMouse(sMouseDown);
+    const throttledMouseMove = throttledMouse(sMouseMove);
+    const throttledMouseUp = throttledMouse(sMouseUp);
 
     const main = () => {
         const startTime = new Date();
@@ -77,17 +77,44 @@ window.onload = () => {
     $frequency.addEventListener("input", updateFunc);
     $btn.addEventListener("click", () => main());
     $canvas.addEventListener('mousedown', e => {
+        e.preventDefault();
         throttledMouseDown(e);
         return false;
     });
     $canvas.addEventListener('mouseup', e => {
+        e.preventDefault();
         throttledMouseUp(e);
         return false;
     });
     $canvas.addEventListener('mousemove', e => {
+        e.preventDefault();
         throttledMouseMove(e);
         return false;
     });
+
+    function touch2Mouse(e)
+    {
+      var theTouch = e.changedTouches[0];
+      var mouseEv;
+    
+      switch(e.type)
+      {
+        case "touchstart": mouseEv="mousedown"; break;  
+        case "touchend":   mouseEv="mouseup"; break;
+        case "touchmove":  mouseEv="mousemove"; break;
+        default: return;
+      }
+    
+      var mouseEvent = document.createEvent("MouseEvent");
+      mouseEvent.initMouseEvent(mouseEv, true, true, window, 1, theTouch.screenX, theTouch.screenY, theTouch.clientX, theTouch.clientY, false, false, false, false, 0, null);
+      theTouch.target.dispatchEvent(mouseEvent);
+    
+      e.preventDefault();
+    }
+    document.addEventListener("touchstart", touch2Mouse, true);
+    document.addEventListener("touchmove", touch2Mouse, true);
+    document.addEventListener("touchend", touch2Mouse, true);
+
 
     main();
 };
