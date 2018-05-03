@@ -61,12 +61,13 @@ window.onload = () => {
             sMouseMove.listen((pos) => {});
             sMouseUp.listen((pos) => {});
 
-            let scene = (ctx : CanvasRenderingContext2D) => {};
-            golf(sys, windowSize, sMouseDown, sMouseMove, sMouseUp).listen((sc) => scene = sc);
+            const scene = golf(sys, windowSize, sMouseDown, sMouseMove, sMouseUp);
+            // Dummy listener to hold the scene alive so that sample() functions properly.
+            scene.listen((sc) => {} );
 
             function animate() {
                 ctx.clearRect(0, 0, windowSize.width, windowSize.height);
-                scene(ctx);
+                scene.sample()(ctx);
                 timeoutFunc(animate, 1000/frequency);
             }
 
