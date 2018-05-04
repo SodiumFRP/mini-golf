@@ -2,7 +2,7 @@ import golf from "./golf";
 import {SecondsTimerSystem, Operational, Transaction, Cell, StreamSink} from "sodiumjs";
 import * as modernizrConfig from "./../.modernizrrc.json";
 import throttle from 'lodash.throttle';
-import {Pos, Dimensions} from "./types";
+import {Point, Dimensions} from "./types";
 import getCoords from './getCoords';
 
 window.onload = () => {
@@ -42,9 +42,9 @@ window.onload = () => {
         width: $canvas.width,
         height: $canvas.height
     };
-    const sMouseDown = new StreamSink<Pos>();
-    const sMouseMove = new StreamSink<Pos>();
-    const sMouseUp = new StreamSink<Pos>();
+    const sMouseDown = new StreamSink<Point>();
+    const sMouseMove = new StreamSink<Point>();
+    const sMouseUp = new StreamSink<Point>();
     const throttledMouse = stream => throttle((e) => stream.send(getCoords(e, $canvas)), 16);
     const throttledMouseDown = throttledMouse(sMouseDown);
     const throttledMouseMove = throttledMouse(sMouseMove);
@@ -57,9 +57,9 @@ window.onload = () => {
         updateFunc();
         Transaction.run(() => {
 
-            sMouseDown.listen((pos) => {});
-            sMouseMove.listen((pos) => {});
-            sMouseUp.listen((pos) => {});
+            sMouseDown.listen((pt) => {console.log("{x:"+Math.floor(pt.x)+",y:"+Math.floor(pt.y)+"}");});
+            sMouseMove.listen((pt) => {});
+            sMouseUp.listen((pt) => {});
 
             const scene = golf(sys, windowSize, sMouseDown, sMouseMove, sMouseUp);
             // Dummy listener to hold the scene alive so that sample() functions properly.
@@ -112,9 +112,9 @@ window.onload = () => {
     
       e.preventDefault();
     }
-    document.addEventListener("touchstart", touch2Mouse, true);
-    document.addEventListener("touchmove", touch2Mouse, true);
-    document.addEventListener("touchend", touch2Mouse, true);
+    $canvas.addEventListener("touchstart", touch2Mouse, true);
+    $canvas.addEventListener("touchmove", touch2Mouse, true);
+    $canvas.addEventListener("touchend", touch2Mouse, true);
 
 
     main();
