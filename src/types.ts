@@ -106,7 +106,7 @@ export {
     Point,
     Dimensions,
     Vector,
-    addPV, subtractPP, multiplyVS, normalizeV,
+    addPV, subtractPP, multiplyVS, normalizeV, magnitude,
     Ray,
     lineSegmentToRay,
     polygonBounce,

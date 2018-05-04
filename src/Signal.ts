@@ -50,6 +50,11 @@ class Signal {
         return res;
     }
 
+    // Solves the time when the velocity is 0.
+    public whenVelocity0() {
+        return this.t0 - 0.5 * this.b / this.a;
+    }
+
     // handle the quadratic mathematical integral
     public integrate(initial) {
         if (this.a !== 0) {

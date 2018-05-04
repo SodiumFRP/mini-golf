@@ -1,7 +1,8 @@
 import {Cell, CellLoop, Stream, StreamLoop, SecondsTimerSystem, Operational} from "sodiumjs";
 import {Dimensions, Point, lineSegmentToRay, polygonBounce, Ray, subtractPP,
-        normalizeV, reflection, addPV, multiplyVS} from "./types";
+        normalizeV, reflection, addPV, multiplyVS, magnitude, Vector} from "./types";
 import {Option, option, some, none} from "ts-option";
+import Signal from "./Signal";
 
 function drawBall(ctx : CanvasRenderingContext2D, pos : Point, radius : number, colour : string)
 {
@@ -59,7 +60,62 @@ const green = [
     {x:62,y:287},
     {x:210,y:65}];
 
-const ballRadius = 20;
+const ballRadius = 20,
+      resistance = -20;
+
+class Bounce {
+    public intersec : Point;
+    public distance : number;
+    public refl     : Vector;
+    constructor(p0 : Point, v0 : Point)
+    {
+        const speed = magnitude(v0);
+        const dir = speed == 0 ? { x: 0, y: 0} : normalizeV(v0);
+        const bounce = polygonBounce(green, { orig : p0, vec : dir });
+        this.distance = bounce.distance;
+        this.intersec = addPV(p0, multiplyVS(dir, bounce.distance));
+        this.refl = reflection(v0, bounce.normal);
+    }
+}
+
+class Trajectory {
+    public p0 : Point;
+    public dir : Vector;
+    public sig : Signal;
+    public tStop : number;
+    public oBounce : Option<Bounce>;
+    public tBounce : Option<number>;
+
+    constructor(t0 : number, p0 : Point, v0 : Vector, green : Point[])
+    {
+        this.p0 = p0;
+        const speed = magnitude(v0);
+        this.dir = speed == 0 ? { x: 0, y: 0} : normalizeV(v0);
+        this.sig = new Signal(t0, resistance, magnitude(v0), 0);
+        this.tStop = this.sig.whenVelocity0();
+
+        if (speed == 0) {
+           this.oBounce = none;
+           this.tBounce = none;
+        }
+        else {
+           const b = new Bounce(p0, v0);
+           const tBounce = this.sig.when(b.distance);
+           if (tBounce == null) {
+               this.tBounce = option(tBounce);
+               this.oBounce = option(b);
+           }
+        }
+    }
+
+    public posAt(t : number) {
+        const tLim = t < this.tStop ? t : this.tStop;
+        return addPV(this.p0, multiplyVS(this.dir, this.sig.valueAt(tLim)));
+    }
+}
+
+const constTrajectory = (p0 : Point) =>
+      new Trajectory(0, p0, { x: 0, y: 0 }, green);
 
 export default (
         sys: SecondsTimerSystem,
@@ -69,15 +125,21 @@ export default (
         sMouseUp : Stream<Point>,
     ) => {
 
-    const ball = new Cell<Point>({ x : 200, y: 200 });
+    const ball = new CellLoop<Point>();
+    const sPush = sMouseUp.snapshot(ball, (pt, ballPos) =>
+        subtractPP(ballPos, pt));
+    const traj = sPush.snapshot3(ball, sys.time, (push, ballPos, t0) =>
+        new Trajectory(t0, ballPos, push, green)).hold(constTrajectory({x: 200, y: 200}));
+    ball.loop(
+        sys.time.lift(traj, (t, traj) => traj.posAt(t)));
     const rubberBand = new CellLoop<Option<Point>>();
     rubberBand.loop(
-        sMouseDown.map((pos) => option(pos))
+        sMouseDown.map((pt) => option(pt))
         .orElse(sMouseUp.mapTo(none))
-        .orElse(sMouseMove.snapshot(rubberBand, (pos, oband) =>
-            oband.nonEmpty ? option(pos) : none))
+        .orElse(sMouseMove.snapshot(rubberBand, (pt, oband) =>
+            oband.nonEmpty ? option(pt) : none))
         .hold(none));
-    //const ball = sMouseDown.hold({ x : 200, y: 200 });
+/*
     const bounce = rubberBand.lift(ball, (opt, ball) => {
         if (opt.nonEmpty) {
             const pt = opt.get;
@@ -97,17 +159,7 @@ export default (
         else
             return none;
     });
-    sMouseUp.snapshot(ball, (pt, ball) => {
-                 const velocity = subtractPP(ball, pt);
-                 //const length = magnitude(direction);
-                 const direction = { orig : ball, vec : normalizeV(velocity) } as Ray;
-                 const bounce = polygonBounce(green, direction);
-                 console.log(bounce.distance+" "+bounce.normal.x+","+bounce.normal.y);
-                 return 0;
-            })
-            .listen(i => {});
-    return append3(
-            ball.map(pos => ctx => drawBall(ctx, pos, ballRadius, "#ffff00")),
+
             bounce.map(obounce => ctx => {
                 if (obounce.nonEmpty) {
                     drawRay(ctx, obounce.get.incident);
@@ -115,6 +167,18 @@ export default (
                     drawRay(ctx, obounce.get.refl);
                 }
             }),
+    */
+    sMouseUp.snapshot(ball, (pt, ball) => {
+                 const velocity = subtractPP(ball, pt);
+                 //const length = magnitude(direction);
+                 const direction = { orig : ball, vec : normalizeV(velocity) } as Ray;
+                 const bounce = polygonBounce(green, direction);
+                 //console.log(bounce.distance+" "+bounce.normal.x+","+bounce.normal.y);
+                 return 0;
+            })
+            .listen(i => {});
+    return append(
+            ball.map(pos => ctx => drawBall(ctx, pos, ballRadius, "#ffffff")),
             rubberBand.lift(ball, (oband, ball) => (ctx) => {
                 if (oband.nonEmpty) drawLineSegment(ctx, oband.get, ball);
             })
