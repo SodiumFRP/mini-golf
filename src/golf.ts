@@ -156,11 +156,24 @@ export default (
 
     const ball = new Cell<Point>({x: 200, y: 200});
 
+    // Rubber band state
+    const rubberBand = new CellLoop<Option<Point>>();
+    rubberBand.loop(
+        sMouseDown.map((pt) => option(pt))
+        .orElse(sMouseUp.mapTo(none))
+        .orElse(sMouseMove.snapshot(rubberBand, (pt, oband) =>
+            oband.nonEmpty ? option(pt) : none))
+        .hold(none));
+
     // Draw stuff
-    return ball.map(ballPos =>
-        ctx => {
-            drawPolygon(ctx, green, "#008f00");
-            drawBall(ctx, ballPos, ballRadius, "#ffffff");
-        }
-    );
+    return append(
+            // Draw ball
+            ball.map(pos => ctx => drawBall(ctx, pos, ballRadius, "#ffffff")),
+            // Draw rubber band
+            rubberBand.lift(ball, (oband, ball) => (ctx) => {
+                if (oband.nonEmpty) drawLineSegment(ctx, oband.get, ball);
+            })
+        )
+        // Draw green
+        .map(draw => append_(ctx => drawPolygon(ctx, green, "#008f00"), draw));
 }
