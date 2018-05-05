@@ -154,8 +154,13 @@ export default (
         sMouseUp:   Stream<Point>,
     ) => {
 
+    const ball = new Cell<Point>({x: 200, y: 200});
+
     // Draw stuff
-    return new Cell<(CanvasRenderingContext2D) => void>(
-        ctx => drawPolygon(ctx, green, "#008f00")
+    return ball.map(ballPos =>
+        ctx => {
+            drawPolygon(ctx, green, "#008f00");
+            drawBall(ctx, ballPos, ballRadius, "#ffffff");
+        }
     );
 }
