@@ -49,29 +49,41 @@ window.onload = () => {
     const throttledMouseDown = throttledMouse(sMouseDown);
     const throttledMouseMove = throttledMouse(sMouseMove);
     const throttledMouseUp = throttledMouse(sMouseUp);
+    
+    sMouseDown.listen(pt => console.log("{x: "+Math.floor(pt.x)+", y: "+Math.floor(pt.y)+"},"));
+
+    let toKill : () => void = () => { };
 
     const main = () => {
+        // Kill any previous instance
+        toKill();
+
         const startTime = new Date();
         const sys = new SecondsTimerSystem();
 
         updateFunc();
-        Transaction.run(() => {
-
-            sMouseDown.listen((pt) => {console.log("{x:"+Math.floor(pt.x)+",y:"+Math.floor(pt.y)+"}");});
-            sMouseMove.listen((pt) => {});
-            sMouseUp.listen((pt) => {});
+        toKill = Transaction.run(() => {
 
             const scene = golf(sys, windowSize, sMouseDown, sMouseMove, sMouseUp);
             // Dummy listener to hold the scene alive so that sample() functions properly.
-            scene.listen((sc) => {} );
+            const killScene = scene.listen((sc) => {});
+            let running = true;
 
             function animate() {
-                ctx.clearRect(0, 0, windowSize.width, windowSize.height);
-                scene.sample()(ctx);
-                timeoutFunc(animate, 1000/frequency);
+                if (running) {
+                    ctx.fillStyle="#f0ff80";
+                    ctx.fillRect(0, 0, windowSize.width, windowSize.height);
+                    scene.sample()(ctx);
+                    timeoutFunc(animate, 1000/frequency);
+                }
             }
 
             animate();
+
+            return () => {
+                killScene();
+                running = false;
+            };
         });
     };
 
@@ -115,7 +127,6 @@ window.onload = () => {
     $canvas.addEventListener("touchstart", touch2Mouse, true);
     $canvas.addEventListener("touchmove", touch2Mouse, true);
     $canvas.addEventListener("touchend", touch2Mouse, true);
-
 
     main();
 };

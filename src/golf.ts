@@ -49,7 +49,7 @@ const append_ = (f, g) => ctx => {
 const append = (f, g) => f.lift(g, append_);
 const append3 = (f, g, h) => append(append(f, g), h);
 
-const green = [
+const green1 = [
     {x:492,y:225},
     {x:1056,y:251},
     {x:1401,y:88},
@@ -60,31 +60,62 @@ const green = [
     {x:62,y:287},
     {x:210,y:65}];
 
+const green2 = [
+    {x: 12, y: 248},
+    {x: 183, y: 12},
+    {x: 384, y: 107},
+    {x: 497, y: 253},
+    {x: 528, y: 453},
+    {x: 915, y: 488},
+    {x: 1232, y: 428},
+    {x: 1275, y: 275},
+    {x: 1088, y: 225},
+    {x: 1144, y: 12},
+    {x: 1521, y: 80},
+    {x: 1672, y: 363},
+    {x: 1458, y: 708},
+    {x: 769, y: 678},
+    {x: 271, y: 671},
+    {x: 22, y: 355}];
+
+const green = green2;
+
 const ballRadius = 20,
-      resistance = -20;
+      resistance = -70,
+      boostFactor = 4;
 
 class Bounce {
     public intersec : Point;
-    public distance : number;
+    public tBounce  : number | null;
     public refl     : Vector;
-    constructor(p0 : Point, v0 : Point)
+    constructor(sig : Signal, p0 : Point, v0 : Point)
     {
         const speed = magnitude(v0);
-        const dir = speed == 0 ? { x: 0, y: 0} : normalizeV(v0);
-        const bounce = polygonBounce(green, { orig : p0, vec : dir });
-        this.distance = bounce.distance;
-        this.intersec = addPV(p0, multiplyVS(dir, bounce.distance));
-        this.refl = reflection(v0, bounce.normal);
+        if (speed != 0) {
+            const dir = speed == 0 ? { x: 0, y: 0} : normalizeV(v0);
+            const bounce = polygonBounce(green, { orig : p0, vec : dir });
+            const distance = bounce.distance - ballRadius;
+            this.tBounce = sig.when(distance);
+            if (this.tBounce != null) {
+                this.intersec = addPV(p0, multiplyVS(dir, distance));
+                this.refl = reflection(multiplyVS(dir, sig.velocityAt(this.tBounce)), bounce.normal);
+            }
+        }
+        else
+            this.tBounce = null;
+    }
+    public isValid() : boolean {
+        return this.tBounce != null;
     }
 }
 
+// Ball trajectory: Describes the ball's motion as from time t0.
 class Trajectory {
     public p0 : Point;
     public dir : Vector;
     public sig : Signal;
     public tStop : number;
     public oBounce : Option<Bounce>;
-    public tBounce : Option<number>;
 
     constructor(t0 : number, p0 : Point, v0 : Vector, green : Point[])
     {
@@ -94,23 +125,19 @@ class Trajectory {
         this.sig = new Signal(t0, resistance, magnitude(v0), 0);
         this.tStop = this.sig.whenVelocity0();
 
-        if (speed == 0) {
+        if (speed == 0)
            this.oBounce = none;
-           this.tBounce = none;
-        }
         else {
-           const b = new Bounce(p0, v0);
-           const tBounce = this.sig.when(b.distance);
-           if (tBounce == null) {
-               this.tBounce = option(tBounce);
-               this.oBounce = option(b);
-           }
+           const bounce = new Bounce(this.sig, p0, v0);
+           if (bounce.isValid())
+               this.oBounce = option(bounce);
         }
     }
 
+    // Position of the ball 
     public posAt(t : number) {
         const tLim = t < this.tStop ? t : this.tStop;
-        return addPV(this.p0, multiplyVS(this.dir, this.sig.valueAt(tLim)));
+        return addPV(this.p0, multiplyVS(this.dir, this.sig.posAt(tLim)));
     }
 }
 
@@ -118,20 +145,28 @@ const constTrajectory = (p0 : Point) =>
       new Trajectory(0, p0, { x: 0, y: 0 }, green);
 
 export default (
-        sys: SecondsTimerSystem,
+        sys:        SecondsTimerSystem,
         windowSize: Dimensions,
-        sMouseDown : Stream<Point>,
-        sMouseMove : Stream<Point>,
-        sMouseUp : Stream<Point>,
+        sMouseDown: Stream<Point>,
+        sMouseMove: Stream<Point>,
+        sMouseUp:   Stream<Point>,
     ) => {
 
-    const ball = new CellLoop<Point>();
-    const sPush = sMouseUp.snapshot(ball, (pt, ballPos) =>
-        subtractPP(ballPos, pt));
-    const traj = sPush.snapshot3(ball, sys.time, (push, ballPos, t0) =>
-        new Trajectory(t0, ballPos, push, green)).hold(constTrajectory({x: 200, y: 200}));
-    ball.loop(
-        sys.time.lift(traj, (t, traj) => traj.posAt(t)));
+    const traj = new CellLoop<Trajectory>();
+    const ball = sys.time.lift(traj, (t, traj) => traj.posAt(t));
+    const sPush = sMouseUp.snapshot3(ball, sys.time, (click, ball, t0) => {
+        let push = multiplyVS(subtractPP(ball, click), boostFactor);
+        return new Trajectory(t0, ball, push, green);
+    });
+    const sBounce =
+        sys.at(traj.map(traj => (traj.oBounce ? traj.oBounce.get.tBounce
+                                             : null) as number))
+        .snapshot(traj,
+            (t0, traj) => new Trajectory(t0, traj.posAt(t0), traj.oBounce.get.refl, green)   
+        );
+    traj.loop(sPush
+        .orElse(sBounce)
+        .hold(constTrajectory({x: 200, y: 200})));
     const rubberBand = new CellLoop<Option<Point>>();
     rubberBand.loop(
         sMouseDown.map((pt) => option(pt))
@@ -168,15 +203,6 @@ export default (
                 }
             }),
     */
-    sMouseUp.snapshot(ball, (pt, ball) => {
-                 const velocity = subtractPP(ball, pt);
-                 //const length = magnitude(direction);
-                 const direction = { orig : ball, vec : normalizeV(velocity) } as Ray;
-                 const bounce = polygonBounce(green, direction);
-                 //console.log(bounce.distance+" "+bounce.normal.x+","+bounce.normal.y);
-                 return 0;
-            })
-            .listen(i => {});
     return append(
             ball.map(pos => ctx => drawBall(ctx, pos, ballRadius, "#ffffff")),
             rubberBand.lift(ball, (oband, ball) => (ctx) => {

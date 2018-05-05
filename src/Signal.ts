@@ -21,9 +21,14 @@ class Signal {
     }
 
     // Samples signal at a specified time
-    public valueAt(t: number) {
+    public posAt(t: number) {
         const x = t - this.t0;
         return this.a * x * x + this.b * x + this.c;
+    }
+
+    public velocityAt(t: number) {
+        const x = t - this.t0;
+        return 2 * this.a * x + this.b;
     }
 
     // Solves the time when the signal’s value reaches x
@@ -65,7 +70,7 @@ class Signal {
 
     public static integrate(cSig: Cell<Signal>, initial) {
         const sSig = Operational.updates(cSig);
-        return sSig.accum(cSig.sample().integrate(initial), (neu, old) => neu.integrate(old.valueAt(neu.t0)));
+        return sSig.accum(cSig.sample().integrate(initial), (neu, old) => neu.integrate(old.posAt(neu.t0)));
     }
 }
 
