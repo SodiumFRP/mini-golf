@@ -120,7 +120,11 @@ class Trajectory {
     public tStop : number;            // Time when ball rolls to a stop
     public oBounce : Option<Bounce>;  // Next ball bounce (if one exists)
 
-    constructor(t0 : number, p0 : Point, v0 : Vector, green : Point[])
+    constructor(
+        t0 : number,                  // Initial time
+        p0 : Point,                   // Initial position
+        v0 : Vector,                  // Initial velocity
+        green : Point[])              // The green for calculating bounces
     {
         this.p0 = p0;
         const speed = magnitude(v0);
@@ -138,6 +142,7 @@ class Trajectory {
 
     // Position of the ball at time t
     public posAt(t : number) {
+        // After time tStop (ball rolls to a stop) don't move any more.
         const tLim = t < this.tStop ? t : this.tStop;
         return addPV(this.p0, multiplyVS(this.dir, this.sig.posAt(tLim)));
     }
