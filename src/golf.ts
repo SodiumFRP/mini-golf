@@ -170,8 +170,20 @@ export default (
         let push = multiplyVS(subtractPP(ball, click), boostFactor);
         return new Trajectory(t0, ball, push, green);
     });
+    // The time of the next bounce.
+    const tBounce = traj.map(traj =>
+        (traj.oBounce.nonEmpty ? traj.oBounce.get.tBounce
+                               : null) as number); 
+    const sBounce =
+        // Stream that fires at the time of the next bounce
+        sys.at(tBounce)
+        // At that time, calculate a new trajectory.
+        .snapshot(traj,
+            (t0, traj) => new Trajectory(t0, traj.posAt(t0),
+                traj.oBounce.get.reflection, green)   
+        );
     // Current ball trajectory
-    traj.loop(sPush.hold(traj0));
+    traj.loop(sPush.orElse(sBounce).hold(traj0));
 
     // Rubber band state
     const rubberBand = new CellLoop<Option<Point>>();
