@@ -124,10 +124,9 @@ class Trajectory {
         this.dir = speed == 0 ? { x: 0, y: 0} : normalizeV(v0);
         this.sig = new Signal(t0, resistance, magnitude(v0), 0);
         this.tStop = this.sig.whenVelocity0();
+        this.oBounce = none;
 
-        if (speed == 0)
-           this.oBounce = none;
-        else {
+        if (speed != 0) {
            const bounce = new Bounce(this.sig, p0, v0);
            if (bounce.isValid())
                this.oBounce = option(bounce);
@@ -159,8 +158,8 @@ export default (
         return new Trajectory(t0, ball, push, green);
     });
     const sBounce =
-        sys.at(traj.map(traj => (traj.oBounce ? traj.oBounce.get.tBounce
-                                             : null) as number))
+        sys.at(traj.map(traj => (traj.oBounce.nonEmpty ? traj.oBounce.get.tBounce
+                                                       : null) as number))
         .snapshot(traj,
             (t0, traj) => new Trajectory(t0, traj.posAt(t0), traj.oBounce.get.refl, green)   
         );

@@ -55,10 +55,7 @@ window.onload = () => {
     let toKill : () => void = () => { };
 
     const main = () => {
-        // Kill any previous instance
-        toKill();
-
-        const startTime = new Date();
+        toKill();  // Kill old instance
         const sys = new SecondsTimerSystem();
 
         updateFunc();
@@ -68,6 +65,7 @@ window.onload = () => {
             // Dummy listener to hold the scene alive so that sample() functions properly.
             const killScene = scene.listen((sc) => {});
             let running = true;
+            let n = 0;
 
             function animate() {
                 if (running) {
@@ -81,8 +79,8 @@ window.onload = () => {
             animate();
 
             return () => {
-                killScene();
                 running = false;
+                killScene();
             };
         });
     };
