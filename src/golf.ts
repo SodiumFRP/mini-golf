@@ -154,7 +154,19 @@ export default (
         sMouseUp:   Stream<Point>,
     ) => {
 
-    const ball = new Cell<Point>({x: 200, y: 200});
+    // Initial ball trajectory - stationary
+    const traj0 = constTrajectory({x: 200, y: 200});
+
+    const traj = new CellLoop<Trajectory>();
+    // Current ball position
+    const ball = sys.time.lift(traj, (t, traj) => traj.posAt(t));
+    // Push the ball when the mouse is released
+    const sPush = sMouseUp.snapshot3(ball, sys.time, (click, ball, t0) => {
+        let push = multiplyVS(subtractPP(ball, click), boostFactor);
+        return new Trajectory(t0, ball, push, green);
+    });
+    // Current ball trajectory
+    traj.loop(sPush.hold(traj0));
 
     // Rubber band state
     const rubberBand = new CellLoop<Option<Point>>();
