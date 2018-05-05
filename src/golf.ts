@@ -164,7 +164,7 @@ export default (
     // Rubber band state
     const rubberBand = new CellLoop<Option<Point>>();
     rubberBand.loop(
-        sMouseDown.map((pt) => option(pt))
+        sMouseDown.map(pt => option(pt))
         .orElse(sMouseUp.mapTo(none))
         .orElse(sMouseMove.snapshot(rubberBand, (pt, oband) =>
             oband.nonEmpty ? option(pt) : none))
