@@ -51,6 +51,8 @@ window.onload = () => {
     const throttledMouseUp = throttledMouse(sMouseUp);
     
     sMouseDown.listen(pt => console.log("{x: "+Math.floor(pt.x)+", y: "+Math.floor(pt.y)+"},"));
+    sMouseMove.listen(pt => {});
+    sMouseUp.listen(pt => {});
 
     let toKill : () => void = () => { };
 
