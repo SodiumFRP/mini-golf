@@ -26,7 +26,7 @@ class Signal {
         return this.a * x * x + this.b * x + this.c;
     }
 
-    public velocityAt(t: number) {
+    public velAt(t: number) {
         const x = t - this.t0;
         return 2 * this.a * x + this.b;
     }

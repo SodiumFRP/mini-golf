@@ -85,9 +85,10 @@ const ballRadius = 20,
       boostFactor = 4;
 
 class Bounce {
-    public intersec : Point;
-    public tBounce  : number | null;
-    public refl     : Vector;
+    public intersec   : Point;          // Bounce intersection point
+    public tBounce    : number | null;  // Bounce time (absolute)
+    public reflection : Vector;         // Velocity vector after bounce 
+
     constructor(sig : Signal, p0 : Point, v0 : Point)
     {
         const speed = magnitude(v0);
@@ -95,15 +96,17 @@ class Bounce {
             const dir = speed == 0 ? { x: 0, y: 0} : normalizeV(v0);
             const bounce = polygonBounce(green, { orig : p0, vec : dir });
             const distance = bounce.distance - ballRadius;
-            this.tBounce = sig.when(distance);
+            this.tBounce = sig.when(distance) as number;
             if (this.tBounce != null) {
                 this.intersec = addPV(p0, multiplyVS(dir, distance));
-                this.refl = reflection(multiplyVS(dir, sig.velocityAt(this.tBounce)), bounce.normal);
+                this.reflection = reflection(
+                    multiplyVS(dir, sig.velAt(this.tBounce)), bounce.normal);
             }
         }
         else
             this.tBounce = null;
     }
+
     public isValid() : boolean {
         return this.tBounce != null;
     }
@@ -111,11 +114,11 @@ class Bounce {
 
 // Ball trajectory: Describes the ball's motion as from time t0.
 class Trajectory {
-    public p0 : Point;
-    public dir : Vector;
-    public sig : Signal;
-    public tStop : number;
-    public oBounce : Option<Bounce>;
+    public p0 : Point;                // Initial position
+    public dir : Vector;              // Normalized direction
+    public sig : Signal;              // Function of t -> distance
+    public tStop : number;            // Time when ball rolls to a stop
+    public oBounce : Option<Bounce>;  // Next ball bounce (if one exists)
 
     constructor(t0 : number, p0 : Point, v0 : Vector, green : Point[])
     {
@@ -133,7 +136,7 @@ class Trajectory {
         }
     }
 
-    // Position of the ball 
+    // Position of the ball at time t
     public posAt(t : number) {
         const tLim = t < this.tStop ? t : this.tStop;
         return addPV(this.p0, multiplyVS(this.dir, this.sig.posAt(tLim)));
@@ -151,21 +154,33 @@ export default (
         sMouseUp:   Stream<Point>,
     ) => {
 
+    // Initial ball trajectory - stationary
+    const traj0 = constTrajectory({x: 200, y: 200});
+
     const traj = new CellLoop<Trajectory>();
+    // Current ball position
     const ball = sys.time.lift(traj, (t, traj) => traj.posAt(t));
+    // Push the ball when the mouse is released
     const sPush = sMouseUp.snapshot3(ball, sys.time, (click, ball, t0) => {
         let push = multiplyVS(subtractPP(ball, click), boostFactor);
         return new Trajectory(t0, ball, push, green);
     });
+    // The time of the next bounce.
+    const tBounce = traj.map(traj =>
+        (traj.oBounce.nonEmpty ? traj.oBounce.get.tBounce
+                               : null) as number); 
     const sBounce =
-        sys.at(traj.map(traj => (traj.oBounce.nonEmpty ? traj.oBounce.get.tBounce
-                                                       : null) as number))
+        // Stream that fires at the time of the next bounce
+        sys.at(tBounce)
+        // At that time, calculate a new trajectory.
         .snapshot(traj,
-            (t0, traj) => new Trajectory(t0, traj.posAt(t0), traj.oBounce.get.refl, green)   
+            (t0, traj) => new Trajectory(t0, traj.posAt(t0),
+                traj.oBounce.get.reflection, green)   
         );
-    traj.loop(sPush
-        .orElse(sBounce)
-        .hold(constTrajectory({x: 200, y: 200})));
+    // Current ball trajectory
+    traj.loop(sPush.orElse(sBounce).hold(traj0));
+
+    // Rubber band state
     const rubberBand = new CellLoop<Option<Point>>();
     rubberBand.loop(
         sMouseDown.map((pt) => option(pt))
@@ -173,42 +188,16 @@ export default (
         .orElse(sMouseMove.snapshot(rubberBand, (pt, oband) =>
             oband.nonEmpty ? option(pt) : none))
         .hold(none));
-/*
-    const bounce = rubberBand.lift(ball, (opt, ball) => {
-        if (opt.nonEmpty) {
-            const pt = opt.get;
-            const velocity = subtractPP(ball, pt);
-            const direction = { orig : ball, vec : normalizeV(velocity) } as Ray;
-            const bounce = polygonBounce(green, direction);
-            const intersec = addPV(ball, multiplyVS(direction.vec, bounce.distance));
-            const refl = reflection(velocity, bounce.normal);
-            //console.log(bounce.distance+" "+bounce.normal.x+","+bounce.normal.y);
-            //return option({ orig : intersec, vec : multiplyVS(bounce.normal, 200) } as Ray);
-            return option( {
-                incident : { orig : intersec, vec : velocity } as Ray,
-                normal   : { orig : intersec, vec : multiplyVS(bounce.normal, 200) } as Ray,
-                refl     : { orig : intersec, vec : refl } as Ray });
-            //return option({ orig : intersec, vec : refl } as Ray);
-        }
-        else
-            return none;
-    });
 
-            bounce.map(obounce => ctx => {
-                if (obounce.nonEmpty) {
-                    drawRay(ctx, obounce.get.incident);
-                    drawRay(ctx, obounce.get.normal);
-                    drawRay(ctx, obounce.get.refl);
-                }
-            }),
-    */
+    // Draw stuff
     return append(
+            // Draw ball
             ball.map(pos => ctx => drawBall(ctx, pos, ballRadius, "#ffffff")),
+            // Draw rubber band
             rubberBand.lift(ball, (oband, ball) => (ctx) => {
                 if (oband.nonEmpty) drawLineSegment(ctx, oband.get, ball);
             })
         )
-        .map(draw => append_((ctx) => {
-            drawPolygon(ctx, green, "#008f00");
-        }, draw));
+        // Draw green
+        .map(draw => append_(ctx => drawPolygon(ctx, green, "#008f00"), draw));
 }
