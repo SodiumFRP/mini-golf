@@ -146,7 +146,7 @@ class Trajectory {
 const constTrajectory = (p0 : Point) =>
       new Trajectory(0, p0, { x: 0, y: 0 }, green);
 
-export default (
+export default (                                           
         sys:        SecondsTimerSystem,
         windowSize: Dimensions,
         sMouseDown: Stream<Point>,
@@ -154,50 +154,8 @@ export default (
         sMouseUp:   Stream<Point>,
     ) => {
 
-    // Initial ball trajectory - stationary
-    const traj0 = constTrajectory({x: 200, y: 200});
-
-    const traj = new CellLoop<Trajectory>();
-    // Current ball position
-    const ball = sys.time.lift(traj, (t, traj) => traj.posAt(t));
-    // Push the ball when the mouse is released
-    const sPush = sMouseUp.snapshot3(ball, sys.time, (click, ball, t0) => {
-        let push = multiplyVS(subtractPP(ball, click), boostFactor);
-        return new Trajectory(t0, ball, push, green);
-    });
-    // The time of the next bounce.
-    const tBounce = traj.map(traj =>
-        (traj.oBounce.nonEmpty ? traj.oBounce.get.tBounce
-                               : null) as number); 
-    const sBounce =
-        // Stream that fires at the time of the next bounce
-        sys.at(tBounce)
-        // At that time, calculate a new trajectory.
-        .snapshot(traj,
-            (t0, traj) => new Trajectory(t0, traj.posAt(t0),
-                traj.oBounce.get.reflection, green)   
-        );
-    // Current ball trajectory
-    traj.loop(sPush.orElse(sBounce).hold(traj0));
-
-    // Rubber band state
-    const rubberBand = new CellLoop<Option<Point>>();
-    rubberBand.loop(
-        sMouseDown.map((pt) => option(pt))
-        .orElse(sMouseUp.mapTo(none))
-        .orElse(sMouseMove.snapshot(rubberBand, (pt, oband) =>
-            oband.nonEmpty ? option(pt) : none))
-        .hold(none));
-
     // Draw stuff
-    return append(
-            // Draw ball
-            ball.map(pos => ctx => drawBall(ctx, pos, ballRadius, "#ffffff")),
-            // Draw rubber band
-            rubberBand.lift(ball, (oband, ball) => (ctx) => {
-                if (oband.nonEmpty) drawLineSegment(ctx, oband.get, ball);
-            })
-        )
-        // Draw green
-        .map(draw => append_(ctx => drawPolygon(ctx, green, "#008f00"), draw));
+    return new Cell<(CanvasRenderingContext2D) => void>(
+        ctx => drawPolygon(ctx, green, "#008f00")
+    );
 }
