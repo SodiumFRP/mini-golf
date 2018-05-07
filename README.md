@@ -2,7 +2,7 @@
 
 Thanks to Lex Huang for the continous_time example, where I got all the Typescript stuff from.
 
-A typescript implementation of Mini golf using continuous time.
+A typescript implementation of a FRP-based mini golf demonstrating continuous time.
 
 ## Prerequisite: Node.js
 
