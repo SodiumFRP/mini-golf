@@ -1,6 +1,8 @@
-# continuous_time
+# mini-golf
 
-A typescript implementation of continuous-time from [functional reactive programming](https://www.amazon.com/Functional-Reactive-Programming-Stephen-Blackheath/dp/1633430103)
+Thanks to Lex Huang for the continous_time example, where I got all the Typescript stuff from.
+
+A typescript implementation of Mini golf using continuous time.
 
 ## Prerequisite: Node.js
 
@@ -10,15 +12,15 @@ Install [Node.js® and npm](https://nodejs.org/en/download/current/) if they are
 
 ### via NPM
 ```bash
-$> git clone https://github.com/huanhulan/continuous_time.git
-$> cd continuous_time
+$> git clone https://github.com/SodiumFRP/mini-golf.git
+$> cd mini-golf
 $> npm install
 ```
 
 ### via Yarn
 ```bash
-$> git clone https://github.com/huanhulan/continuous_time.git
-$> cd continuous_time
+$> git clone https://github.com/SodiumFRP/mini-golf.git
+$> cd mini-golf
 $> yarn
 ```
 
