@@ -1,8 +1,8 @@
 import golf from "./golf";
-import {SecondsTimerSystem, Operational, Transaction, Cell, StreamSink} from "sodiumjs";
+import {SecondsTimerSystem, Transaction, StreamSink} from "sodiumjs";
 import * as modernizrConfig from "./../.modernizrrc.json";
 import throttle from 'lodash.throttle';
-import {Point, Dimensions} from "./types";
+import {Point} from "./types";
 import getCoords from './getCoords';
 
 window.onload = () => {

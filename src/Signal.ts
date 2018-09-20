@@ -1,4 +1,4 @@
-import {Cell, Operational} from "sodiumjs";
+import { Cell, Operational } from "sodiumjs";
 /**
  * Signals for quadratic motion can use for all three quantities: position, velocity, and acceleration.
  * For example,  t0 is the time of the start of the animation, and {t1, t2, t3, …} are the bounce times.
